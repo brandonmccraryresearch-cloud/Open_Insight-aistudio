@@ -64,8 +64,12 @@ export function getDebateById(id: string): Debate | undefined {
 const _newThreads = new Map<string, ForumThread[]>();
 
 export function addThread(forumSlug: string, thread: ForumThread): void {
-  const existing = _newThreads.get(forumSlug) ?? [];
-  _newThreads.set(forumSlug, [...existing, thread]);
+  const existing = _newThreads.get(forumSlug);
+  if (existing) {
+    existing.push(thread);
+  } else {
+    _newThreads.set(forumSlug, [thread]);
+  }
 }
 
 export function getForums(): Forum[] {
