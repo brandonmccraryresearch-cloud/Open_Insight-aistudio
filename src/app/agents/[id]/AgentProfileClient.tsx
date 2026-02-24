@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 interface Task {
@@ -145,7 +145,9 @@ function TaskQueueSection({ agentId }: { agentId: string }) {
     setLoaded(true);
   }, [agentId]);
 
-  if (!loaded) loadTasks();
+  useEffect(() => {
+    loadTasks();
+  }, [loadTasks]);
 
   const addTask = async (e: React.FormEvent) => {
     e.preventDefault();

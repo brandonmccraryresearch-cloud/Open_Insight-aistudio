@@ -30,7 +30,7 @@ function CreateAgentForm({ onClose, onCreated }: { onClose: () => void; onCreate
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    const id = form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    const id = form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") + "-" + Date.now().toString(36);
     await fetch("/api/agents", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

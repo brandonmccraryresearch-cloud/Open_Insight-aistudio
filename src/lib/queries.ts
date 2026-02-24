@@ -31,9 +31,10 @@ export function getAgentById(id: string): Agent | undefined {
   return agentData.find((a) => a.id === id) ?? _newAgents.find((a) => a.id === id);
 }
 
-export function addAgent(agent: Agent): void {
-  if (getAgentById(agent.id)) return;
+export function addAgent(agent: Agent): boolean {
+  if (getAgentById(agent.id)) return false;
   _newAgents.push(agent);
+  return true;
 }
 
 export function deleteAgent(id: string): boolean {

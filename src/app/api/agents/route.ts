@@ -46,6 +46,9 @@ export async function POST(request: NextRequest) {
     keyPublications: body.keyPublications || [],
   };
 
-  addAgent(agent);
+  const added = addAgent(agent);
+  if (!added) {
+    return NextResponse.json({ error: "Agent with this ID already exists" }, { status: 409 });
+  }
   return NextResponse.json({ agent }, { status: 201 });
 }
