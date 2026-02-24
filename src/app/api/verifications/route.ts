@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getVerifications } from "@/lib/queries";
-import { db } from "@/db";
-import * as schema from "@/db/schema";
 
 export function GET(request: NextRequest) {
   const tier = request.nextUrl.searchParams.get("tier") ?? undefined;
@@ -11,26 +9,30 @@ export function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  let body: { claim?: string; tier?: string; tool?: string; agentId?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
   const { claim, tier, tool, agentId } = body;
 
   if (!claim || !tier || !tool || !agentId) {
-    return NextResponse.json({ error: "claim, tier, tool, and agentId are required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "claim, tier, tool, and agentId are required" },
+      { status: 400 },
+    );
   }
 
-  const id = `v-${crypto.randomUUID()}`;
-  db.insert(schema.verifications).values({
-    id,
-    claim,
-    tier,
-    tool,
-    status: "queued",
-    agentId,
-    timestamp: new Date().toISOString(),
-    details: "Awaiting verification...",
-    duration: "pending",
-    confidence: null,
-  }).run();
-
-  return NextResponse.json({ verification: { id, claim, tier, status: "queued" } }, { status: 201 });
+  // State is not persisted in the stateless port. Reuse an existing sample
+  // verification id for this tier (if available) so that the streaming
+  // endpoint, which only knows about the mock data set, can operate on it.
+  const existingForTier = getVerifications(tier, undefined);
+  const existing = existingForTier[0];
+  const id = existing?.id ?? `v-${crypto.randomUUID()}`;
+  const status = existing?.status ?? "queued";
+  return NextResponse.json(
+    { verification: { id, claim, tier, status } },
+    { status: 201 },
+  );
 }
