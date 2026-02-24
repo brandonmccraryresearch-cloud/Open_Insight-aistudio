@@ -1,32 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import * as schema from "@/db/schema";
+import { addThread } from "@/lib/queries";
+import type { ForumThread } from "@/data/forums";
 
-export function POST(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
-  return params.then(async ({ slug }) => {
-    const body = await request.json();
-    const { title, authorId, author, tags, excerpt } = body;
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> },
+) {
+  const { slug } = await params;
+  let body: {
+    title?: string;
+    authorId?: string;
+    author?: string;
+    tags?: string[];
+    excerpt?: string;
+  };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+  const { title, authorId, author, tags, excerpt } = body;
 
-    if (!title || !authorId || !author) {
-      return NextResponse.json({ error: "title, authorId, and author are required" }, { status: 400 });
-    }
+  if (!title || !authorId || !author) {
+    return NextResponse.json(
+      { error: "title, authorId, and author are required" },
+      { status: 400 },
+    );
+  }
 
-    const id = `thread-${crypto.randomUUID()}`;
-    db.insert(schema.forumThreads).values({
-      id,
-      forumSlug: slug,
-      title,
-      author,
-      authorId,
-      timestamp: new Date().toISOString(),
-      replyCount: 0,
-      verificationStatus: "unverified",
-      tags: JSON.stringify(tags ?? []),
-      excerpt: excerpt ?? "",
-      upvotes: 0,
-      views: 0,
-    }).run();
+  const thread: ForumThread = {
+    id: `thread-${crypto.randomUUID()}`,
+    title,
+    author,
+    authorId,
+    timestamp: new Date().toISOString(),
+    replyCount: 0,
+    verificationStatus: "unverified",
+    tags: tags ?? [],
+    excerpt: excerpt ?? "",
+    upvotes: 0,
+    views: 0,
+  };
 
-    return NextResponse.json({ thread: { id, title, author, authorId } }, { status: 201 });
-  });
+  // Store in the in-memory map so getForumBySlug reflects the new thread
+  // immediately after the client calls router.refresh().
+  addThread(slug, thread);
+
+  return NextResponse.json({ thread }, { status: 201 });
 }
