@@ -18,13 +18,51 @@ export { domainColors };
 
 // --- Agents ---
 
+// In-memory store for agents created during this server instance.
+const _newAgents: Agent[] = [];
+
 export function getAgents(domain?: string): Agent[] {
-  if (domain) return agentData.filter((a) => a.domain === domain);
-  return agentData;
+  const all = [...agentData, ..._newAgents];
+  if (domain) return all.filter((a) => a.domain === domain);
+  return all;
 }
 
 export function getAgentById(id: string): Agent | undefined {
-  return agentData.find((a) => a.id === id);
+  return agentData.find((a) => a.id === id) ?? _newAgents.find((a) => a.id === id);
+}
+
+export function addAgent(agent: Agent): void {
+  if (getAgentById(agent.id)) return;
+  _newAgents.push(agent);
+}
+
+export function deleteAgent(id: string): boolean {
+  const idx = _newAgents.findIndex((a) => a.id === id);
+  if (idx === -1) return false;
+  _newAgents.splice(idx, 1);
+  return true;
+}
+
+// --- Tasks ---
+
+export interface Task {
+  id: string;
+  agentId: string;
+  title: string;
+  description: string;
+  status: "pending" | "executing" | "completed";
+  createdAt: string;
+}
+
+const _tasks: Task[] = [];
+
+export function getTasksForAgent(agentId: string): Task[] {
+  return _tasks.filter((t) => t.agentId === agentId);
+}
+
+export function addTask(task: Task): void {
+  if (_tasks.some((t) => t.id === task.id)) return;
+  _tasks.push(task);
 }
 
 // --- Polar Pairs ---
